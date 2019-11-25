@@ -1,4 +1,8 @@
 ---
+- name: Gathering service facts
+  service_facts:
+  register: service_state
+
 - name: Create zookeeper group
   group:
     name: '{{ zookeeper_group }}'
@@ -144,6 +148,33 @@
     - Restart ZooKeeper service
   tags:
     - zookeeper_config
+
+- name: Open Leader Port in Firewall
+  firewalld:
+    port: '{{ zookeeper_leader_port }}/tcp'
+    permanent: yes
+    state: enabled
+
+- name: Open Election Port in Firewall
+  firewalld:
+    port: '{{ zookeeper_election_port }}/tcp'
+    permanent: yes
+    state: enabled
+
+- name: Open Leader Port in Firewall (immediate)
+  firewalld:
+    port: '{{ zookeeper_leader_port }}/tcp'
+    immediate: yes
+    state: enabled
+  when: service_state.ansible_facts.services["firewalld.service"].state == "running"
+
+- name: Open Election Port in Firewall (immediate)
+  firewalld:
+    port: '{{ zookeeper_election_port }}/tcp'
+    immediate: yes
+    state: enabled
+  when: service_state.ansible_facts.services["firewalld.service"].state == "running"
+
 
 - name: Template ZooKeeper systemd service file
   template:
